@@ -30,7 +30,7 @@ if not st.session_state.authenticated:
                 st.session_state.authenticated = True
                 st.rerun()
             else:
-                st.error("비밀번호가 일치하지 않습니다.")
+                st.error("경고! 비밀번호가 일치하지 않습니다. 귀하의 방문 시도 기록이 서버에 저장 됩니다.")
     st.stop()
 
 # =============================================================================
@@ -80,7 +80,7 @@ def analyze_with_gemini(api_key, original, script):
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
-            model_name='gemini-1.5-pro',
+            model_name='gemini-2.5-flash',
             system_instruction=SYSTEM_INSTRUCTION
         )
 
