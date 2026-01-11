@@ -3,6 +3,37 @@ import google.generativeai as genai
 import json
 
 # =============================================================================
+# [0] 페이지 기본 설정 (가장 먼저 실행되어야 함)
+# =============================================================================
+st.set_page_config(page_title="문학 강의 논리 분석기", page_icon="📝", layout="wide")
+
+# =============================================================================
+# [SECRET] 비밀번호 보호 로직
+# =============================================================================
+# 세션 상태 초기화
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+# 로그인 화면 (인증되지 않았으면 여기서 멈춤)
+if not st.session_state.authenticated:
+    st.markdown("<h1 style='text-align: center; color: white;'>🔒 접근 제한</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #ccc;'>관계자 외 접근이 제한된 페이지입니다.</p>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        password_input = st.text_input("비밀번호를 입력하세요", type="password")
+        
+        if password_input:
+            # st.secrets에서 'ACCESS_PASSWORD'를 가져와 비교
+            if password_input == st.secrets["ACCESS_PASSWORD"]:
+                st.session_state.authenticated = True
+                st.rerun()  # 화면 새로고침하여 메인 화면 진입
+            else:
+                st.error("경고! 비밀번호가 일치하지 않습니다. 귀하의 접근 기록이 서버에 남습니다.")
+    
+    st.stop() # 인증 안 되면 아래 코드는 실행하지 않음
+
+# =============================================================================
 # [1] 시스템 프롬프트 (분석 논리 및 출력 포맷 지정)
 # =============================================================================
 SYSTEM_INSTRUCTION = """
@@ -82,9 +113,7 @@ def analyze_with_gemini(api_key, original, script):
 # =============================================================================
 # [3] Streamlit UI 설정 (Pure Dark Mode)
 # =============================================================================
-st.set_page_config(page_title="문학 강의 논리 분석기", page_icon="📝", layout="wide")
-
-# 가시성 확보를 위한 CSS (검은 배경, 흰 글씨, 박스 제거)
+# CSS 스타일링 (검은 배경, 흰 글씨, 박스 제거)
 st.markdown("""
     <style>
     /* 1. 전체 앱 배경 및 폰트 색상 강제 지정 */
@@ -202,7 +231,6 @@ if analyze_btn:
                 """, unsafe_allow_html=True)
                 
                 # 2. 핵심 메시지
-                # 예: 핵심 : 내용. (테마)
                 st.markdown(f"""
                 <div class="core-msg">
                 핵심 : {seq['core_message']} ({seq['theme_keyword']})
@@ -210,7 +238,6 @@ if analyze_btn:
                 """, unsafe_allow_html=True)
                 
                 # 3. 디테일 (Fact = Interpretation)
-                # 요청 포맷: -절름발이 사내... = 신체적 손상...
                 for detail in seq.get('details', []):
                     st.markdown(f"""
                     <div class="detail-line">
