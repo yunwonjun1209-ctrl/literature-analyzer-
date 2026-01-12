@@ -71,6 +71,23 @@ if not st.session_state.authenticated:
             st.error("비밀번호가 일치하지 않습니다.")
     st.stop()
 
+# [UI] 우측 상단에 인터넷 이미지 고정하기
+st.markdown("""
+    <style>
+    .top-right-image {
+        position: fixed; /* 스크롤해도 고정됨 (원치 않으면 absolute로 변경) */
+        top: 20px;       /* 위에서 얼마나 띄울지 */
+        right: 20px;     /* 오른쪽에서 얼마나 띄울지 */
+        width: 120px;    /* 사진 크기 (원하는 대로 조절) */
+        z-index: 1000;   /* 다른 요소보다 위에 오도록 */
+        border-radius: 10px; /* 모서리 둥글게 (싫으면 삭제) */
+        opacity: 0.9;    /* 투명도 (1.0이 불투명) */
+    }
+    </style>
+    <img src="https://i.namu.wiki/i/Iie8i1o1dVcRnzTjU2nHmgjjaFbImjnr0sjSeuI9g5PtSF4JyXZn1U2aLBZdNIh4tVzy8B6IyB_AMA6KkcKXqw7lnLTVPHTZQk9x2_PhNDFZeKJKXuFqyH-evDi4AYM2ev-Ye_IJfpFnNZy8WQVYFQ.webp" class="top-right-image">
+    """, unsafe_allow_html=True)
+
+
 # =============================================================================
 # [1] 시스템 프롬프트 (정답 서식 학습)
 # =============================================================================
