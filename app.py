@@ -80,6 +80,10 @@ if not st.session_state.authenticated:
                 st.error("비밀번호가 일치하지 않습니다.")
     st.stop()
 
+import streamlit as st
+import google.generativeai as genai
+import json
+
 # =============================================================================
 # [1] 시스템 프롬프트 (분석 논리 및 출력 포맷 지정)
 # =============================================================================
