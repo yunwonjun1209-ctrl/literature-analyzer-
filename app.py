@@ -1,6 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
 import json
+import re
+
 
 # =============================================================================
 # [0] 페이지 설정 및 디자인 (블랙 모드 & 텍스트 서식 최적화)
