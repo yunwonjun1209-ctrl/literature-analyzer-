@@ -76,7 +76,7 @@ st.markdown("""
     <style>
     .top-right-image {
         position: fixed; /* 스크롤해도 고정됨 (원치 않으면 absolute로 변경) */
-        top: 20px;       /* 위에서 얼마나 띄울지 */
+        top: 50px;       /* 위에서 얼마나 띄울지 */
         right: 20px;     /* 오른쪽에서 얼마나 띄울지 */
         width: 120px;    /* 사진 크기 (원하는 대로 조절) */
         z-index: 1000;   /* 다른 요소보다 위에 오도록 */
