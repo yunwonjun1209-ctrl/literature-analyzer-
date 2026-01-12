@@ -76,9 +76,9 @@ st.markdown("""
     <style>
     .top-right-image {
         position: fixed; /* 스크롤해도 고정됨 (원치 않으면 absolute로 변경) */
-        top: 50px;       /* 위에서 얼마나 띄울지 */
-        right: 20px;     /* 오른쪽에서 얼마나 띄울지 */
-        width: 120px;    /* 사진 크기 (원하는 대로 조절) */
+        top: 70px;       /* 위에서 얼마나 띄울지 */
+        right: 50px;     /* 오른쪽에서 얼마나 띄울지 */
+        width: 300px;    /* 사진 크기 (원하는 대로 조절) */
         z-index: 1000;   /* 다른 요소보다 위에 오도록 */
         border-radius: 10px; /* 모서리 둥글게 (싫으면 삭제) */
         opacity: 0.9;    /* 투명도 (1.0이 불투명) */
