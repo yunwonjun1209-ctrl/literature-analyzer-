@@ -3,119 +3,24 @@ import google.generativeai as genai
 import json
 import re
 
-
 # =============================================================================
-# [0] 페이지 설정 및 디자인 (블랙 모드 & 텍스트 서식 최적화)
+# [0] 페이지 설정 (심플한 다크 모드)
 # =============================================================================
 st.set_page_config(page_title="문학 강의 논리 분석기", page_icon="📝", layout="wide")
 
+# CSS: 배경은 어둡게, 글씨는 밝게 (복잡한 클래스 제거)
 st.markdown("""
     <style>
-    /* 1. 전체 배경: 딥 다크 모드 (완전 검정이 아닌 세련된 다크그레이) */
     .stApp {
-        background-color: #121212 !important;
-        color: #E0E0E0 !important;
-        font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+        background-color: #1E1E1E; /* 진한 회색 배경 */
     }
-    
-    /* 2. 헤더 및 일반 텍스트 색상 (밝은 회색) */
-    h1, h2, h3, h4, h5, h6 {
-        color: #FFFFFF !important;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-    }
-    p, span, label, li, div {
-        color: #E0E0E0 !important;
-        line-height: 1.6;
-    }
-    
-    /* 3. 입력창 스타일 (모던한 다크 테마) */
     .stTextArea textarea {
-        background-color: #1E1E1E !important;
+        background-color: #2D2D2D !important;
         color: #FFFFFF !important;
-        border: 1px solid #333 !important;
-        border-radius: 8px;
-        padding: 15px;
-        font-size: 15px;
     }
-    .stTextArea textarea:focus {
-        border-color: #4A90E2 !important; /* 포커스 시 파란색 강조 */
-    }
-    
-    /* 4. 사이드바 스타일 (차분한 톤) */
-    [data-testid="stSidebar"] {
-        background-color: #0A0A0A !important;
-        border-right: 1px solid #222;
-    }
-    
-    /* 5. 버튼 스타일 (그라데이션 효과) */
-    .stButton button {
-        background: linear-gradient(90deg, #4A90E2, #50C9C3);
-        color: white !important;
-        border: none;
-        border-radius: 8px;
-        font-weight: bold;
-        padding: 10px 20px;
-        transition: all 0.3s ease;
-    }
-    .stButton button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
-    }
-
-    /* 6. 결과 텍스트 출력 스타일 (카드형 레이아웃 + 가독성) */
-    .result-container {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-    
-    .sequence-card {
-        background-color: #1E1E1E;
-        border-radius: 12px;
-        padding: 25px;
-        margin-bottom: 30px;
-        border: 1px solid #333;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-    }
-    
-    .seq-header {
-        font-size: 1.3em;
-        font-weight: 800;
-        color: #FF8A80 !important; /* 살구색 포인트 */
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #333;
-    }
-    
-    .core-msg {
-        font-size: 1.1em;
-        font-weight: 700;
-        color: #81D4FA !important; /* 하늘색 포인트 */
-        background-color: rgba(129, 212, 250, 0.1);
-        padding: 12px;
-        border-radius: 6px;
-        margin-bottom: 20px;
-        border-left: 4px solid #81D4FA;
-    }
-    
-    .detail-line {
-        font-size: 1em;
-        color: #F5F5F5 !important;
-        margin-bottom: 12px;
-        padding-left: 10px;
-        border-left: 2px solid #555;
-    }
-    
-    .break-point {
-        background-color: #2C2C2C;
-        color: #FFD54F !important; /* 노란색 포인트 */
-        padding: 20px;
-        border-radius: 8px;
-        text-align: center;
-        margin: 40px 0;
-        font-weight: bold;
-        border: 1px dashed #555;
+    h1, h2, h3, p, div, span, li {
+        color: #E0E0E0 !important; /* 밝은 회색 글씨 */
+        font-family: sans-serif;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -128,23 +33,15 @@ if "authenticated" not in st.session_state:
 
 if not st.session_state.authenticated:
     st.title("🔒 접근 제한")
+    password_input = st.text_input("비밀번호를 입력하세요", type="password")
     
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        password_input = st.text_input("비밀번호를 입력하세요", type="password")
-        if password_input:
-            if "ACCESS_PASSWORD" in st.secrets and password_input == st.secrets["ACCESS_PASSWORD"]:
-                st.session_state.authenticated = True
-                st.rerun()
-            elif "ACCESS_PASSWORD" not in st.secrets:
-                st.error("Secrets에 비밀번호가 설정되지 않았습니다.")
-            else:
-                st.error("비밀번호가 일치하지 않습니다.")
+    if password_input:
+        if "ACCESS_PASSWORD" in st.secrets and password_input == st.secrets["ACCESS_PASSWORD"]:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("비밀번호가 일치하지 않습니다.")
     st.stop()
-
-import streamlit as st
-import google.generativeai as genai
-import json
 
 # =============================================================================
 # [1] 시스템 프롬프트 (정답 서식 학습)
@@ -198,7 +95,6 @@ Output MUST be in Korean.
 def analyze_with_gemini(api_key, original, script):
     try:
         genai.configure(api_key=api_key)
-        # 1.5 Pro 모델 (논리 분석 최적화)
         model = genai.GenerativeModel(
             model_name='gemini-2.5-flash',
             system_instruction=SYSTEM_INSTRUCTION
@@ -220,7 +116,6 @@ def analyze_with_gemini(api_key, original, script):
         with st.spinner("🧠 정밀 분석 중..."):
             response = model.generate_content(user_prompt)
             raw_text = response.text
-            # JSON 추출 (안전장치)
             match = re.search(r'\{.*\}', raw_text, re.DOTALL)
             if match:
                 return json.loads(match.group(0))
@@ -231,7 +126,7 @@ def analyze_with_gemini(api_key, original, script):
         return {"error": str(e)}
 
 # =============================================================================
-# [3] 메인 화면 UI (줄바꿈이 적용된 텍스트 출력)
+# [3] 메인 화면 UI (가독성 수정됨)
 # =============================================================================
 st.title("문학 강의 논리 분석기")
 st.markdown("---")
@@ -257,48 +152,34 @@ if st.button("🚀 분석 시작", use_container_width=True):
         if "error" in result:
             st.error(f"오류: {result['error']}")
         else:
-           # [결과 출력 로직 - 디자인 적용 버전]
-            output_html = f"""<div class="result-container">"""
+            st.divider()
             
-            # 1. 제목
+            # 제목 출력
             title = result.get('metadata', {}).get('title', '분석 결과')
-            output_html += f"<h2 style='text-align:center; margin-bottom:40px;'>📂 {title}</h2>"
+            st.subheader(f"📂 {title}")
+            st.markdown("<br>", unsafe_allow_html=True)
 
             sequences = result.get('sequences', [])
             bp = result.get('structure_break_point', {})
 
             for seq in sequences:
-                # 카드 시작
-                output_html += f"""<div class="sequence-card">"""
+                # 1. 시퀀스 헤더 (빨간색 강조)
+                st.markdown(f"### <span style='color:#FF8A80'>&lt;시퀀스{seq['seq_id']}&gt;</span> {seq['summary']}", unsafe_allow_html=True)
                 
-                # 시퀀스 헤더 & 요약
-                output_html += f"""
-                <div class="seq-header">&lt;시퀀스{seq['seq_id']}&gt; {seq['summary']}</div>
-                """
+                # 2. 핵심 메시지 (파란색 강조)
+                st.markdown(f"**핵심 : <span style='color:#81D4FA'>{seq['core_message']}</span> ({seq['theme_keyword']})**", unsafe_allow_html=True)
                 
-                # 핵심 메시지
-                output_html += f"""
-                <div class="core-msg">🔑 핵심 : {seq['core_message']} ({seq['theme_keyword']})</div>
-                """
-                
-                # 상세 내용
+                # 3. 디테일 (일반 텍스트)
                 for detail in seq.get('details', []):
-                    output_html += f"""
-                    <div class="detail-line">● {detail['fact']} <br><span style='color:#bbb; font-size:0.9em;'>&nbsp;&nbsp;↳ {detail['interpretation']}</span></div>
-                    """
+                    st.write(f"- {detail['fact']} = {detail['interpretation']}")
                 
-                output_html += "</div>" # 카드 끝
+                st.markdown("<br>", unsafe_allow_html=True) # 줄바꿈
 
-                # 중략/전환점
+                # 4. 중략/전환점
                 if bp and seq['seq_id'] == bp.get('after_sequence'):
-                    output_html += f"""
-                    <div class="break-point">
-                        🔄 {bp.get('description')}<br><br>
-                        <span style='color:#aaa;'>[전]</span> {bp['change_state']['before']}<br>
-                        <span style='color:#fff;'>↓</span><br>
-                        <span style='color:#aaa;'>[후]</span> {bp['change_state']['after']}
-                    </div>
-                    """
-            
-            output_html += "</div>"
-            st.markdown(output_html, unsafe_allow_html=True)
+                    st.markdown("---")
+                    st.markdown(f"#### 🔄 {bp.get('description')}")
+                    st.write(f"전 = {bp['change_state']['before']}")
+                    st.write(f"후 = {bp['change_state']['after']}")
+                    st.markdown("---")
+                    st.markdown("<br>", unsafe_allow_html=True)
