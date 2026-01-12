@@ -8,23 +8,51 @@ import re
 # =============================================================================
 st.set_page_config(page_title="문학 강의 논리 분석기", page_icon="📝", layout="wide")
 
-# CSS: 배경은 어둡게, 글씨는 밝게 (복잡한 클래스 제거)
 st.markdown("""
     <style>
+    /* 1. 전체 앱 배경 (검정) */
     .stApp {
-        background-color: #1E1E1E; /* 진한 회색 배경 */
-    }
-    .stTextArea textarea {
-        background-color: #2D2D2D !important;
+        background-color: #000000 !important;
         color: #FFFFFF !important;
     }
-    h1, h2, h3, p, div, span, li {
-        color: #E0E0E0 !important; /* 밝은 회색 글씨 */
-        font-family: sans-serif;
+    
+    /* 2. 사이드바 배경 (완전 검정으로 통일) */
+    [data-testid="stSidebar"] {
+        background-color: #000000 !important; /* 여기를 검정으로 변경 */
+        border-right: 1px solid #333;
+    }
+    
+    /* 3. 입력창 스타일 (어두운 회색) */
+    .stTextArea textarea {
+        background-color: #1E1E1E !important;
+        color: #FFFFFF !important;
+        border: 1px solid #444 !important;
+    }
+    .stTextInput input {
+        background-color: #1E1E1E !important;
+        color: #FFFFFF !important;
+        border: 1px solid #444 !important;
+    }
+    
+    /* 4. 헤더, 텍스트 색상 강제 화이트 */
+    h1, h2, h3, h4, h5, h6, p, div, span, label, li {
+        color: #FFFFFF !important;
+    }
+    
+    /* 5. 버튼 스타일 (다크 모드에 맞게) */
+    .stButton button {
+        background-color: #222 !important;
+        color: #fff !important;
+        border: 1px solid #555 !important;
+    }
+    
+    /* 6. 결과 출력 텍스트 스타일 */
+    .result-text {
+        font-size: 16px;
+        line-height: 1.8;
     }
     </style>
     """, unsafe_allow_html=True)
-
 # =============================================================================
 # [SECRET] 비밀번호 보호 로직
 # =============================================================================
