@@ -11,51 +11,111 @@ st.set_page_config(page_title="문학 강의 논리 분석기", page_icon="📝"
 
 st.markdown("""
     <style>
-    /* 1. 전체 배경 및 폰트: 검정 배경, 흰색 텍스트 */
+    /* 1. 전체 배경: 딥 다크 모드 (완전 검정이 아닌 세련된 다크그레이) */
     .stApp {
-        background-color: #000000 !important;
-        color: #FFFFFF !important;
-        font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        background-color: #121212 !important;
+        color: #E0E0E0 !important;
+        font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
     }
     
-    /* 2. 모든 텍스트 강제 화이트 */
-    h1, h2, h3, h4, h5, h6, p, div, span, label, li, textarea {
+    /* 2. 헤더 및 일반 텍스트 색상 (밝은 회색) */
+    h1, h2, h3, h4, h5, h6 {
         color: #FFFFFF !important;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+    p, span, label, li, div {
+        color: #E0E0E0 !important;
+        line-height: 1.6;
     }
     
-    /* 3. 입력창 스타일 */
+    /* 3. 입력창 스타일 (모던한 다크 테마) */
     .stTextArea textarea {
-        background-color: #1a1a1a !important;
-        color: #ffffff !important;
-        border: 1px solid #444 !important;
+        background-color: #1E1E1E !important;
+        color: #FFFFFF !important;
+        border: 1px solid #333 !important;
+        border-radius: 8px;
+        padding: 15px;
+        font-size: 15px;
+    }
+    .stTextArea textarea:focus {
+        border-color: #4A90E2 !important; /* 포커스 시 파란색 강조 */
     }
     
-    /* 4. 사이드바 */
+    /* 4. 사이드바 스타일 (차분한 톤) */
     [data-testid="stSidebar"] {
-        background-color: #0a0a0a !important;
-        border-right: 1px solid #333;
+        background-color: #0A0A0A !important;
+        border-right: 1px solid #222;
     }
     
-    /* 5. 결과 출력용 서식 (줄간격 및 스타일) */
+    /* 5. 버튼 스타일 (그라데이션 효과) */
+    .stButton button {
+        background: linear-gradient(90deg, #4A90E2, #50C9C3);
+        color: white !important;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        padding: 10px 20px;
+        transition: all 0.3s ease;
+    }
+    .stButton button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+    }
+
+    /* 6. 결과 텍스트 출력 스타일 (카드형 레이아웃 + 가독성) */
     .result-container {
-        font-size: 16px;
-        line-height: 1.8;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
     }
+    
+    .sequence-card {
+        background-color: #1E1E1E;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 30px;
+        border: 1px solid #333;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    
     .seq-header {
-        font-weight: bold;
-        color: #FFFFFF;
-        margin-top: 25px;
+        font-size: 1.3em;
+        font-weight: 800;
+        color: #FF8A80 !important; /* 살구색 포인트 */
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #333;
     }
+    
     .core-msg {
-        color: #81D4FA !important; /* 핵심은 살짝 푸른빛으로 구분 */
-        font-weight: bold;
+        font-size: 1.1em;
+        font-weight: 700;
+        color: #81D4FA !important; /* 하늘색 포인트 */
+        background-color: rgba(129, 212, 250, 0.1);
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        border-left: 4px solid #81D4FA;
     }
+    
+    .detail-line {
+        font-size: 1em;
+        color: #F5F5F5 !important;
+        margin-bottom: 12px;
+        padding-left: 10px;
+        border-left: 2px solid #555;
+    }
+    
     .break-point {
-        margin: 30px 0;
-        padding: 15px 0;
-        border-top: 1px dashed #555;
-        border-bottom: 1px dashed #555;
-        color: #FFD54F !important; /* 중략은 노란빛 */
+        background-color: #2C2C2C;
+        color: #FFD54F !important; /* 노란색 포인트 */
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin: 40px 0;
+        font-weight: bold;
+        border: 1px dashed #555;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -197,46 +257,48 @@ if st.button("🚀 분석 시작", use_container_width=True):
         if "error" in result:
             st.error(f"오류: {result['error']}")
         else:
-            st.markdown("---")
+           # [결과 출력 로직 - 디자인 적용 버전]
+            output_html = f"""<div class="result-container">"""
             
-            # [최종 출력 로직] 줄바꿈(<br>)을 적극적으로 활용하여 간격 확보
-            html = '<div class="result-text">'
-            
-            # 제목
+            # 1. 제목
             title = result.get('metadata', {}).get('title', '분석 결과')
-            html += f"<h3>📂 {title}</h3><br>"
+            output_html += f"<h2 style='text-align:center; margin-bottom:40px;'>📂 {title}</h2>"
 
             sequences = result.get('sequences', [])
             bp = result.get('structure_break_point', {})
 
             for seq in sequences:
-                # 1. <시퀀스N> 요약
-                html += f"""
+                # 카드 시작
+                output_html += f"""<div class="sequence-card">"""
+                
+                # 시퀀스 헤더 & 요약
+                output_html += f"""
                 <div class="seq-header">&lt;시퀀스{seq['seq_id']}&gt; {seq['summary']}</div>
                 """
                 
-                # 2. 핵심 : 메시지 (테마) - 아래에 빈 줄 추가
-                html += f"""
-                <div class="core-msg">핵심 : {seq['core_message']} ({seq['theme_keyword']})</div>
+                # 핵심 메시지
+                output_html += f"""
+                <div class="core-msg">🔑 핵심 : {seq['core_message']} ({seq['theme_keyword']})</div>
                 """
                 
-                # 3. -팩트 = 해석 (각 줄마다 div로 감싸고 margin-bottom 적용)
+                # 상세 내용
                 for detail in seq.get('details', []):
-                    html += f"""
-                    <div class="detail-line">-{detail['fact']} = {detail['interpretation']}</div>
+                    output_html += f"""
+                    <div class="detail-line">● {detail['fact']} <br><span style='color:#bbb; font-size:0.9em;'>&nbsp;&nbsp;↳ {detail['interpretation']}</span></div>
                     """
                 
-                html += "<br>" # 시퀀스 간격 추가
+                output_html += "</div>" # 카드 끝
 
-                # 4. 중략/전환점
+                # 중략/전환점
                 if bp and seq['seq_id'] == bp.get('after_sequence'):
-                    html += f"""
+                    output_html += f"""
                     <div class="break-point">
-                        {bp.get('description')}<br><br>
-                        전 = {bp['change_state']['before']}<br>
-                        후 = {bp['change_state']['after']}
-                    </div><br>
+                        🔄 {bp.get('description')}<br><br>
+                        <span style='color:#aaa;'>[전]</span> {bp['change_state']['before']}<br>
+                        <span style='color:#fff;'>↓</span><br>
+                        <span style='color:#aaa;'>[후]</span> {bp['change_state']['after']}
+                    </div>
                     """
             
-            html += "</div>"
-            st.markdown(html, unsafe_allow_html=True)
+            output_html += "</div>"
+            st.markdown(output_html, unsafe_allow_html=True)
