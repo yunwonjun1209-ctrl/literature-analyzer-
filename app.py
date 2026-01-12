@@ -85,48 +85,49 @@ import google.generativeai as genai
 import json
 
 # =============================================================================
-# [1] 시스템 프롬프트 (분석 논리 및 출력 포맷 지정)
+# [1] 시스템 프롬프트 (정답 서식 학습)
 # =============================================================================
 SYSTEM_INSTRUCTION = """
-You are a Literature Analysis AI Expert specializing in 'Park Seok-jun's Lecture Style'.
-Analyze the provided 'Original Text' and 'Lecture Script' based on the following protocol.
+You are a Literary Analysis AI.
+Your ONLY goal is to analyze the input Text/Script and output JSON that fits the user's specific text format EXACTLY.
 
-[Analysis Protocol v3.0 - Text Format Focus]
-1. Goal: Analyze the logic connecting [Text Fact] to [Teacher's Interpretation].
-2. Output Format: STRICTLY JSON format only.
-3. Language: Korean (한국어) ONLY.
+[CRITICAL: OUTPUT FORMAT RULE]
+You must output data so it can be rendered EXACTLY like this example:
 
-[JSON Structure Requirement]
-The JSON must support the following output format:
-<Sequence N> Summary
-Key : Core Message (Theme Keyword)
--Fact = Interpretation
+<시퀀스1> Summary Sentence...
+핵심 : Core Message... (Theme)
+-Fact Text = Interpretation Text
+-Fact Text = Interpretation Text
 
+[FEW-SHOT LEARNING DATA (Correct Answer Example)]
+Input: (Text/Script about 'Graveyard Nearby')
+Output JSON:
 {
-  "metadata": {
-    "title": "Work Title",
-    "teacher_logic": "Main Logic"
-  },
+  "metadata": { "title": "윤흥길, 묘지 근처" },
   "structure_break_point": {
-    "after_sequence": 3,
-    "description": "Situation Description",
+    "after_sequence": 4,
+    "description": "중략 기준 상황, 인식의 변화",
     "change_state": {
-      "before": "State Before",
-      "after": "State After"
+      "before": "할머니의 영향 아래 갇힌 인식 (상이군인 = 저승사자)",
+      "after": "할머니의 죽음으로 인한 인식의 확장 (더 넓은 세계의 자각)"
     }
   },
   "sequences": [
     {
       "seq_id": 1,
-      "summary": "Sequence Summary",
-      "core_message": "Core Message",
-      "theme_keyword": "Theme",
+      "summary": "할머니와 ‘나’는 절름발이 사내를 저승사자로 여기며 적대감을 보이고...",
+      "core_message": "전쟁의 폭력성으로 인한 신체적 손상과 그로 인한 정신적 고통.",
+      "theme_keyword": "전쟁의 비극성",
       "details": [
-        {"fact": "Text Fact", "interpretation": "Teacher's Interpretation"}
+        {"fact": "절름발이 사내, 다리를 잃은 청년", "interpretation": "신체적 손상 (공통 범주)"},
+        {"fact": "식판을 노려보며 천둥을 내리쳤다", "interpretation": "신체적 손상으로 인한 정신적 고통"}
       ]
     }
   ]
 }
+
+Now, analyze the NEW input following this EXACT Logic and JSON Structure.
+Output MUST be in Korean.
 """
 
 # =============================================================================
@@ -135,8 +136,9 @@ Key : Core Message (Theme Keyword)
 def analyze_with_gemini(api_key, original, script):
     try:
         genai.configure(api_key=api_key)
+        # 1.5 Pro 모델 (논리 분석 최적화)
         model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash', # 긴 텍스트 분석에 최적화
+            model_name='gemini-2.5-flash',
             system_instruction=SYSTEM_INSTRUCTION
         )
 
@@ -150,114 +152,39 @@ def analyze_with_gemini(api_key, original, script):
         {script}
         
         ---
-        Analyze the above content.
+        Analyze and Output strictly valid JSON.
         """
 
-        with st.spinner("🧠 AI가 분석 중입니다..."):
+        with st.spinner("🧠 정밀 분석 중..."):
             response = model.generate_content(user_prompt)
-            text_response = response.text.replace("```json", "").replace("```", "").strip()
-            return json.loads(text_response)
+            raw_text = response.text
+            # JSON 추출 (안전장치)
+            match = re.search(r'\{.*\}', raw_text, re.DOTALL)
+            if match:
+                return json.loads(match.group(0))
+            else:
+                return {"error": "AI가 JSON을 반환하지 않음", "raw": raw_text}
 
     except Exception as e:
         return {"error": str(e)}
 
 # =============================================================================
-# [3] Streamlit UI 설정 (Pure Dark Mode)
+# [3] 메인 화면 UI (줄바꿈이 적용된 텍스트 출력)
 # =============================================================================
-st.set_page_config(page_title="문학 강의 논리 분석기", page_icon="📝", layout="wide")
-
-# 가시성 확보를 위한 CSS (검은 배경, 흰 글씨, 박스 제거)
-st.markdown("""
-    <style>
-    /* 1. 전체 앱 배경 및 폰트 색상 강제 지정 */
-    .stApp {
-        background-color: #121212 !important;
-        color: #FFFFFF !important;
-    }
-    
-    /* 2. 입력창 스타일 (어두운 회색 배경, 흰색 글씨) */
-    .stTextArea textarea {
-        background-color: #1E1E1E !important;
-        color: #E0E0E0 !important;
-        border: 1px solid #333 !important;
-        font-family: 'Apple SD Gothic Neo', sans-serif;
-    }
-
-    /* 3. 헤더 및 일반 텍스트 색상 */
-    h1, h2, h3, h4, h5, h6, p, label, li, span, div {
-        color: #FFFFFF !important;
-    }
-    
-    /* 4. 사이드바 스타일 */
-    [data-testid="stSidebar"] {
-        background-color: #1E1E1E !important;
-        border-right: 1px solid #333;
-    }
-    
-    /* 5. 분석 결과 텍스트 스타일링 (요청하신 포맷용) */
-    .seq-header {
-        font-size: 1.15em;
-        font-weight: bold;
-        color: #FF8A80 !important; /* 시퀀스 번호 강조색 (살구색) */
-        margin-top: 25px;
-        margin-bottom: 5px;
-    }
-    
-    .seq-summary {
-        font-size: 1.1em;
-        margin-bottom: 10px;
-        line-height: 1.5;
-    }
-
-    .core-msg {
-        font-weight: bold;
-        color: #81D4FA !important; /* 핵심 메시지 강조색 (하늘색) */
-        margin-bottom: 10px;
-    }
-
-    .detail-line {
-        margin-left: 0px;
-        margin-bottom: 5px;
-        line-height: 1.6;
-        color: #E0E0E0 !important;
-    }
-    
-    .break-point {
-        margin: 30px 0;
-        padding: 15px;
-        border-top: 1px dashed #555;
-        border-bottom: 1px dashed #555;
-        color: #FFD54F !important; /* 중략 부분 강조색 (노란색) */
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# -----------------------------------------------------------------------------
-# 사이드바
-# -----------------------------------------------------------------------------
-with st.sidebar:
-    st.header("⚙️ 설정")
-    api_key = st.text_input("Google Gemini API Key", type="password")
-    st.info("입력된 원문과 강의를 '텍스트 포맷'으로 분석합니다.")
-
-# -----------------------------------------------------------------------------
-# 메인 화면
-# -----------------------------------------------------------------------------
-st.title("📝 문학 강의 논리 분석기")
-st.markdown("요청하신 **텍스트 서식(<시퀀스> ... -팩트 = 해석)** 그대로 출력합니다.")
+st.title("문학 강의 논리 분석기")
+st.markdown("---")
 
 col1, col2 = st.columns(2)
 with col1:
-    original_text = st.text_area("1. 작품 원문", height=400)
+    original_text = st.text_area("1. 작품 원문", height=500)
 with col2:
-    lecture_script = st.text_area("2. 강의 스크립트", height=400)
+    lecture_script = st.text_area("2. 강의 스크립트", height=500)
 
-analyze_btn = st.button("🚀 분석 시작", type="primary", use_container_width=True)
+with st.sidebar:
+    st.header("설정")
+    api_key = st.text_input("Google Gemini API Key", type="password")
 
-# -----------------------------------------------------------------------------
-# 분석 결과 출력 (요청하신 포맷 준수)
-# -----------------------------------------------------------------------------
-if analyze_btn:
+if st.button("🚀 분석 시작", use_container_width=True):
     if not api_key:
         st.error("API Key를 입력해주세요.")
     elif not original_text or not lecture_script:
@@ -268,44 +195,46 @@ if analyze_btn:
         if "error" in result:
             st.error(f"오류: {result['error']}")
         else:
-            st.divider()
+            st.markdown("---")
             
-            # 메타데이터
-            st.subheader(f"{result.get('metadata', {}).get('title', '분석 결과')}")
+            # [최종 출력 로직] 줄바꿈(<br>)을 적극적으로 활용하여 간격 확보
+            html = '<div class="result-text">'
             
+            # 제목
+            title = result.get('metadata', {}).get('title', '분석 결과')
+            html += f"<h3>📂 {title}</h3><br>"
+
             sequences = result.get('sequences', [])
             bp = result.get('structure_break_point', {})
 
             for seq in sequences:
-                # 1. 시퀀스 헤더 & 요약
-                st.markdown(f"""
-                <div class="seq-header">&lt;시퀀스{seq['seq_id']}&gt;</div>
-                <div class="seq-summary">{seq['summary']}</div>
-                """, unsafe_allow_html=True)
+                # 1. <시퀀스N> 요약
+                html += f"""
+                <div class="seq-header">&lt;시퀀스{seq['seq_id']}&gt; {seq['summary']}</div>
+                """
                 
-                # 2. 핵심 메시지
-                # 예: 핵심 : 내용. (테마)
-                st.markdown(f"""
-                <div class="core-msg">
-                핵심 : {seq['core_message']} ({seq['theme_keyword']})
-                </div>
-                """, unsafe_allow_html=True)
+                # 2. 핵심 : 메시지 (테마) - 아래에 빈 줄 추가
+                html += f"""
+                <div class="core-msg">핵심 : {seq['core_message']} ({seq['theme_keyword']})</div>
+                """
                 
-                # 3. 디테일 (Fact = Interpretation)
-                # 요청 포맷: -절름발이 사내... = 신체적 손상...
+                # 3. -팩트 = 해석 (각 줄마다 div로 감싸고 margin-bottom 적용)
                 for detail in seq.get('details', []):
-                    st.markdown(f"""
-                    <div class="detail-line">
-                    -{detail['fact']} = {detail['interpretation']}
-                    </div>
-                    """, unsafe_allow_html=True)
+                    html += f"""
+                    <div class="detail-line">-{detail['fact']} = {detail['interpretation']}</div>
+                    """
+                
+                html += "<br>" # 시퀀스 간격 추가
 
-                # 4. 중략/전환점 (Break Point)
+                # 4. 중략/전환점
                 if bp and seq['seq_id'] == bp.get('after_sequence'):
-                    st.markdown(f"""
+                    html += f"""
                     <div class="break-point">
-                        {bp.get('description')}<br>
+                        {bp.get('description')}<br><br>
                         전 = {bp['change_state']['before']}<br>
                         후 = {bp['change_state']['after']}
-                    </div>
-                    """, unsafe_allow_html=True)
+                    </div><br>
+                    """
+            
+            html += "</div>"
+            st.markdown(html, unsafe_allow_html=True)
