@@ -137,14 +137,18 @@ Output MUST be in Korean.
 # =============================================================================
 # [2] API 통신 함수
 # =============================================================================
-def analyze_with_gemini(api_key, original, script):
+# =============================================================================
+# [2] API Function (Modified for Sequence Control)
+# =============================================================================
+def analyze_with_gemini(api_key, original, script, target_count): # <--- target_count 인자 추가됨
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash',
+            model_name='gemini-2.5-flash', # 혹은 gemini-1.5-pro
             system_instruction=SYSTEM_INSTRUCTION
         )
 
+        # 사용자 프롬프트에 '목표 개수'를 강제로 주입
         user_prompt = f"""
         ---
         [Original Text]
@@ -155,10 +159,14 @@ def analyze_with_gemini(api_key, original, script):
         {script}
         
         ---
+        [CRITICAL INSTRUCTION]
+        Divide the content into EXACTLY {target_count} sequences (or close to {target_count}).
+        Do not summarize too briefly; ensure enough detail to meet the target count of {target_count}.
+        
         Analyze and Output strictly valid JSON.
         """
 
-        with st.spinner("🧠 정밀 분석 중..."):
+        with st.spinner(f"🧠 {target_count}개의 시퀀스로 정밀 분석 중..."):
             response = model.generate_content(user_prompt)
             raw_text = response.text
             match = re.search(r'\{.*\}', raw_text, re.DOTALL)
@@ -167,6 +175,10 @@ def analyze_with_gemini(api_key, original, script):
             else:
                 return {"error": "AI가 JSON을 반환하지 않음", "raw": raw_text}
 
+    except Exception as e:
+        return {"error": str(e)}
+# [추가] 시퀀스 개수 설정 슬라이더
+    target_seq_count = st.slider("🎯 희망 시퀀스 개수", min_value=3, max_value=10, value=6, step=1, help="AI에게 몇 개의 장면으로 나누라고 할지 지시합니다.")
     except Exception as e:
         return {"error": str(e)}
 
@@ -192,7 +204,8 @@ if st.button("🚀 분석 시작", use_container_width=True):
     elif not original_text or not lecture_script:
         st.warning("내용을 모두 입력해주세요.")
     else:
-        result = analyze_with_gemini(api_key, original_text, lecture_script)
+        # target_seq_count 변수를 함수에 전달
+        result = analyze_with_gemini(api_key, original_text, lecture_script, target_seq_count)
         
         if "error" in result:
             st.error(f"오류: {result['error']}")
