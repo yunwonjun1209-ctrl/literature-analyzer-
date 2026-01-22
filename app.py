@@ -179,8 +179,7 @@ def analyze_with_gemini(api_key, original, script, target_count): # <--- target_
         return {"error": str(e)}
 # [추가] 시퀀스 개수 설정 슬라이더
     target_seq_count = st.slider("🎯 희망 시퀀스 개수", min_value=3, max_value=10, value=6, step=1, help="AI에게 몇 개의 장면으로 나누라고 할지 지시합니다.")
-    except Exception as e:
-        return {"error": str(e)}
+    
 
 # =============================================================================
 # [3] 메인 화면 UI (가독성 수정됨)
